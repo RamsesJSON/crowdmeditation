@@ -101,34 +101,50 @@
         const database = firebase.database();
 
         const meditateCountRef = database.ref('meditateCount');
+        const userStatusRef = database.ref('status');
 
         const meditateCountSpan = document.getElementById('meditateCount');
         const meditateButton = document.getElementById('meditateButton');
 
         let isMeditating = false;
 
+        // Track the number of people meditating
         meditateCountRef.on('value', (snapshot) => {
             const count = snapshot.val() || 0;
             meditateCountSpan.textContent = count;
         });
 
+        const userId = Math.random().toString(36).substring(2);  // Generate a random user ID
+        const userRef = userStatusRef.child(userId);
+
         meditateButton.addEventListener('click', () => {
             isMeditating = !isMeditating;
             if (isMeditating) {
                 meditateButton.textContent = 'Stop';
+                userRef.set(true);
                 meditateCountRef.transaction((currentCount) => {
                     return (currentCount || 0) + 1;
                 });
             } else {
                 meditateButton.textContent = 'Meditate';
+                userRef.set(false);
                 meditateCountRef.transaction((currentCount) => {
                     return (currentCount || 0) - 1;
                 });
             }
         });
 
+        // Firebase Realtime Database presence system
+        const connectedRef = database.ref('.info/connected');
+        connectedRef.on('value', (snap) => {
+            if (snap.val() === true && isMeditating) {
+                userRef.onDisconnect().set(false);
+            }
+        });
+
         window.addEventListener('beforeunload', () => {
             if (isMeditating) {
+                userRef.set(false);
                 meditateCountRef.transaction((currentCount) => {
                     return (currentCount || 0) - 1;
                 });

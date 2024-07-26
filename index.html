@@ -84,22 +84,21 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script>
         // Your Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyCoSmyB6IB7H7M3_U8-YNQMqIe5b3I-VP8",
-    authDomain: "meditation-crowd.firebaseapp.com",
-    projectId: "meditation-crowd",
-    storageBucket: "meditation-crowd.appspot.com",
-    messagingSenderId: "251142636367",
-    appId: "1:251142636367:web:5072890d46258869e9bb3a"
-  };
+        const firebaseConfig = {
+            apiKey: "AIzaSyCoSmyB6IB7H7M3_U8-YNQMqIe5b3I-VP8",
+            authDomain: "meditation-crowd.firebaseapp.com",
+            databaseURL: "https://meditation-crowd-default-rtdb.firebaseio.com",
+            projectId: "meditation-crowd",
+            storageBucket: "meditation-crowd.appspot.com",
+            messagingSenderId: "251142636367",
+            appId: "1:251142636367:web:5072890d46258869e9bb3a"
+        };
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-        const auth = firebase.auth();
 
         const meditateCountRef = database.ref('meditateCount');
         const userStatusRef = database.ref('status');
@@ -108,7 +107,6 @@
         const meditateButton = document.getElementById('meditateButton');
 
         let isMeditating = false;
-        let userId = null;
 
         // Track the number of people meditating
         meditateCountRef.on('value', (snapshot) => {
@@ -116,60 +114,39 @@
             meditateCountSpan.textContent = count;
         });
 
-        function setupUser(user) {
-            userId = user.uid;
-            const userRef = userStatusRef.child(userId);
+        const userId = Math.random().toString(36).substring(2);  // Generate a random user ID
+        const userRef = userStatusRef.child(userId);
 
-            // Check if the user was meditating before the page reload
-            userRef.once('value', (snapshot) => {
-                if (snapshot.val() === true) {
-                    isMeditating = true;
-                    meditateButton.textContent = 'Stop';
-                }
-            });
-
-            meditateButton.addEventListener('click', () => {
-                isMeditating = !isMeditating;
-                if (isMeditating) {
-                    meditateButton.textContent = 'Stop';
-                    userRef.set(true);
-                    meditateCountRef.transaction((currentCount) => {
-                        return (currentCount || 0) + 1;
-                    });
-                } else {
-                    meditateButton.textContent = 'Meditate';
-                    userRef.set(false);
-                    meditateCountRef.transaction((currentCount) => {
-                        return (currentCount || 0) - 1;
-                    });
-                }
-            });
-
-            // Firebase Realtime Database presence system
-            const connectedRef = database.ref('.info/connected');
-            connectedRef.on('value', (snap) => {
-                if (snap.val() === true && isMeditating) {
-                    userRef.onDisconnect().set(false);
-                }
-            });
-
-            window.addEventListener('beforeunload', () => {
-                if (isMeditating) {
-                    userRef.set(false);
-                    meditateCountRef.transaction((currentCount) => {
-                        return (currentCount || 0) - 1;
-                    });
-                }
-            });
-        }
-
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                setupUser(user);
+        meditateButton.addEventListener('click', () => {
+            isMeditating = !isMeditating;
+            if (isMeditating) {
+                meditateButton.textContent = 'Stop';
+                userRef.set(true);
+                meditateCountRef.transaction((currentCount) => {
+                    return (currentCount || 0) + 1;
+                });
             } else {
-                // Prompt user to sign in anonymously
-                auth.signInAnonymously().catch((error) => {
-                    console.error('Error signing in anonymously', error);
+                meditateButton.textContent = 'Meditate';
+                userRef.set(false);
+                meditateCountRef.transaction((currentCount) => {
+                    return (currentCount || 0) - 1;
+                });
+            }
+        });
+
+        // Firebase Realtime Database presence system
+        const connectedRef = database.ref('.info/connected');
+        connectedRef.on('value', (snap) => {
+            if (snap.val() === true && isMeditating) {
+                userRef.onDisconnect().set(false);
+            }
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (isMeditating) {
+                userRef.set(false);
+                meditateCountRef.transaction((currentCount) => {
+                    return (currentCount || 0) - 1;
                 });
             }
         });

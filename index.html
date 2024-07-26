@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meditation Counter</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f8ff;
+            font-family: Arial, sans-serif;
+        }
+        #container {
+            text-align: center;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>People meditating right now: <span id="meditateCount">0</span></h1>
+        <button id="meditateButton">Meditate</button>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+    <script>
+        // Your Firebase configuration (replace with your actual config)
+          // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyCoSmyB6IB7H7M3_U8-YNQMqIe5b3I-VP8",
+    authDomain: "meditation-crowd.firebaseapp.com",
+    projectId: "meditation-crowd",
+    storageBucket: "meditation-crowd.appspot.com",
+    messagingSenderId: "251142636367",
+    appId: "1:251142636367:web:5072890d46258869e9bb3a"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        const meditateCountRef = database.ref('meditateCount');
+
+        const meditateCountSpan = document.getElementById('meditateCount');
+        const meditateButton = document.getElementById('meditateButton');
+
+        let isMeditating = false;
+
+        meditateCountRef.on('value', (snapshot) => {
+            const count = snapshot.val() || 0;
+            meditateCountSpan.textContent = count;
+        });
+
+        meditateButton.addEventListener('click', () => {
+            isMeditating = !isMeditating;
+            if (isMeditating) {
+                meditateButton.textContent = 'Stop';
+                meditateCountRef.transaction((currentCount) => {
+                    return (currentCount || 0) + 1;
+                });
+            } else {
+                meditateButton.textContent = 'Meditate';
+                meditateCountRef.transaction((currentCount) => {
+                    return (currentCount || 0) - 1;
+                });
+            }
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (isMeditating) {
+                meditateCountRef.transaction((currentCount) => {
+                    return (currentCount || 0) - 1;
+                });
+            }
+        });
+    </script>
+</body>
+</html>

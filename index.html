@@ -120,14 +120,6 @@
         meditateCountRef.on('value', (snapshot) => {
             const count = snapshot.val() || 0;
             meditateCountSpan.textContent = count;
-
-            // Check and update high score
-            highScoreRef.once('value').then((snapshot) => {
-                const highScore = snapshot.val() || 0;
-                if (count > highScore) {
-                    highScoreRef.set(count);
-                }
-            });
         });
 
         // Track the high score
@@ -145,14 +137,18 @@
                 meditateButton.textContent = 'Stop';
                 userRef.set(true);
                 meditateCountRef.transaction((currentCount) => {
-                    return (currentCount || 0) + 1;
+                    const newCount = (currentCount || 0) + 1;
+                    return newCount;
                 }).then(() => {
                     // Check and update high score after meditateCount has been updated
                     meditateCountRef.once('value').then((snapshot) => {
                         const count = snapshot.val() || 0;
                         highScoreRef.once('value').then((snapshot) => {
                             const highScore = snapshot.val() || 0;
+                            console.log("Current count:", count);
+                            console.log("Current highscore:", highScore);
                             if (count > highScore) {
+                                console.log("Updating highscore to:", count);
                                 highScoreRef.set(count);
                             }
                         });

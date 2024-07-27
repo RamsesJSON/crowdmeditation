@@ -42,6 +42,11 @@
             margin-left: 10px;
             display: inline-block;
         }
+        #highScore {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-top: 20px;
+        }
         .online-dot {
             height: 10px;
             width: 10px;
@@ -74,6 +79,7 @@
     <div id="container">
         <h1>People meditating right now: <span class="online-dot"></span><span id="meditateCount">0</span></h1>
         <button id="meditateButton">Meditate</button>
+        <div id="highScore">Most Concurrent Meditators: <span id="highScoreCount">0</span></div>
     </div>
     <footer>
         <p>Made by ramses13th</p>
@@ -101,9 +107,11 @@
         const database = firebase.database();
 
         const meditateCountRef = database.ref('meditateCount');
+        const highScoreRef = database.ref('highScore');
         const userStatusRef = database.ref('status');
 
         const meditateCountSpan = document.getElementById('meditateCount');
+        const highScoreSpan = document.getElementById('highScoreCount');
         const meditateButton = document.getElementById('meditateButton');
 
         let isMeditating = false;
@@ -112,6 +120,20 @@
         meditateCountRef.on('value', (snapshot) => {
             const count = snapshot.val() || 0;
             meditateCountSpan.textContent = count;
+
+            // Check and update high score
+            highScoreRef.once('value').then((snapshot) => {
+                const highScore = snapshot.val() || 0;
+                if (count > highScore) {
+                    highScoreRef.set(count);
+                }
+            });
+        });
+
+        // Track the high score
+        highScoreRef.on('value', (snapshot) => {
+            const highScore = snapshot.val() || 0;
+            highScoreSpan.textContent = highScore;
         });
 
         const userId = Math.random().toString(36).substring(2);  // Generate a random user ID
